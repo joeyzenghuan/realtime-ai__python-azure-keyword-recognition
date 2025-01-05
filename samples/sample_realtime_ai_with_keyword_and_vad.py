@@ -32,6 +32,15 @@ logging.getLogger("realtime_ai").setLevel(logging.ERROR)
 # Root logger for general logging
 logger = logging.getLogger()
 
+import configparser
+
+config = configparser.ConfigParser()
+config.read('C:\GitRepo\OpenAI-examples\.config')
+
+AZURE_OPENAI_ENDPOINT = config.get('RealtimeAPI', 'AZURE_OPENAI_ENDPOINT')
+AZURE_OPENAI_KEY = config.get('RealtimeAPI', 'AZURE_OPENAI_KEY')
+AZURE_OPENAI_DEPLOYMENT = config.get('RealtimeAPI', 'AZURE_OPENAI_DEPLOYMENT')
+AZURE_OPENAI_API_VERSION = config.get('RealtimeAPI', 'AZURE_OPENAI_API_VERSION')
 
 class ConversationState(Enum):
     IDLE = auto()
@@ -315,7 +324,9 @@ def get_vad_configuration(use_server_vad=False):
 
 def get_openai_configuration():
     # The Azure endpoint shall be in the format: "wss://<service-name>.openai.azure.com/openai/realtime"
-    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    # azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    # azure_endpoint = f"{AZURE_OPENAI_ENDPOINT}/openai/realtime?api-version={AZURE_OPENAI_API_VERSION}&deployment={AZURE_OPENAI_DEPLOYMENT}"
+    azure_endpoint = f"{AZURE_OPENAI_ENDPOINT}/openai/realtime"
     api_key = None
     azure_api_version = None
 
@@ -325,8 +336,10 @@ def get_openai_configuration():
             logger.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
             return None, None, None
     else:
-        api_key = os.getenv("AZURE_OPENAI_API_KEY")
-        azure_api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-01-preview")
+        # api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        api_key = AZURE_OPENAI_KEY
+        # azure_api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-01-preview")
+        azure_api_version = AZURE_OPENAI_API_VERSION
 
         if not api_key or not azure_endpoint or not azure_api_version:
             logger.error("Please set the AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, and AZURE_OPENAI_API_VERSION environment variables.")
@@ -354,7 +367,8 @@ def main():
         # Define RealtimeOptions
         options = RealtimeAIOptions(
             api_key=api_key,
-            model="gpt-4o-realtime-preview",
+            # model="gpt-4o-realtime-preview",
+            model=AZURE_OPENAI_DEPLOYMENT,
             modalities=["audio", "text"],
             instructions="You are a helpful assistant. Respond concisely. You have access to a variety of tools to analyze, translate and review text and code.",
             turn_detection=get_vad_configuration(use_server_vad=False),
@@ -406,6 +420,8 @@ def main():
             },
             enable_wave_capture=False,
             keyword_model_file="resources/kws.table",
+            # C:\GitRepo\realtime-ai__python-azure-keyword-recognition\samples>python sample_realtime_ai_with_keyword_and_vad.py
+            # keyword_model_file="C:/GitRepo/realtime-ai__python-azure-keyword-recognition/samples/resources/kws.table",
         )
 
         logger.info("Recording... Press Ctrl+C to stop.")
